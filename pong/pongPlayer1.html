@@ -1,0 +1,140 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>pongPlayer1.html</title>
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+  <script type = "text/javascript"
+          src = "gameClient.js"></script>
+  <script type = "text/javascript">
+    var scene;
+    var ball;
+    var paddlePlayer1;
+    var paddlePlayer2;
+    var joy = new Joy();
+    
+    function Ball(){
+        //class definition for ball
+        tBall = new Sprite(scene, "redBall.png", 20, 20);
+        
+        tBall.checkBounce = function(paddle){
+            //responds to a collision with the given paddle
+            //Max and min dy 
+            MAX = 10
+            if (this.collidesWith(paddle)){
+                this.setDX(this.dx * -1);            
+            
+                dy = this.y - paddle.y;
+                dy = ((dy / paddle.height) * 2);
+                //console.log("dy: " + dy);
+                dy *= MAX;
+                this.setDY(dy);
+            } // end if
+        } // end checkBounce
+
+        tBall.checkBounds = function(){
+            //overwrite checkbounds function to give
+            //custom behavior
+            
+            //bounce off of top and bottom
+            if (this.y < 0){
+                this.setDY(this.dy * -1);
+            }
+            if (this.y > scene.height){
+                this.setDY(this.dy * -1);
+            }
+            
+            //wrap off of sides
+            if(this.x < 0){
+                this.setPosition(scene.width - 150, this.y);
+                //computer scores
+            } // end if
+            if (this.x > scene.width){
+                this.setPosition(150, this.y);
+                //player scores
+            } // end if
+        } // end checkBounds
+        
+        return tBall;
+    } // end Ball def
+    
+    function Paddle(){
+        //class definition for paddle
+        tPaddle = new Sprite(scene, "paddleV.png", 10, 50);
+        
+        tPaddle.followMouse = function(){
+            //follows mouse for player control
+            this.setImgAngle(90);
+            this.setPosition(this.x, scene.getMouseY());
+        } // end followMouse method
+
+        return tPaddle;
+    }
+    
+    //set player2's sprite from the server.
+    function getOtherPlayerFromServer()
+    {
+		gc.updateRemoteSprite("player2", paddlePlayer2);
+	}
+    
+    //send player1's sprite to the server.
+    function sendPlayerToServer()
+    {
+		gc.sendMessage("remote", "Player1 alive!");
+		gc.sendSprite("player1", paddlePlayer1);
+	}
+	
+	//send this client's ball to the server so there is a shared ball to avoid off sync games.
+	function sendBallToServer(){
+		gc.sendSprite("ball", ball);
+	}
+    
+    function init(){
+        scene = new Scene();
+        scene.setBG("green");
+        scene.hideCursor();
+
+        ball = new Ball();
+    
+        paddlePlayer1 = new Paddle();
+        paddlePlayer1.setPosition(100, 100);
+        paddlePlayer1.setMoveAngle(0);
+        
+        //even though we do not control paddlePlayer2 we still need to init it.
+        paddlePlayer2 = new Paddle();
+        paddlePlayer2.setPosition(700, 100);
+        
+        //setup game client
+        gc = new GameClient("ws://localhost:8001/gameserver.js");
+        gc.connect();
+    
+        scene.start();
+    } // end init
+    
+    function update(){
+        scene.clear();
+        
+        //get and set to and from server
+        getOtherPlayerFromServer();
+		sendPlayerToServer();
+		sendBallToServer();
+		
+        paddlePlayer1.followMouse();
+
+        ball.checkBounce(paddlePlayer1);
+        ball.checkBounce(paddlePlayer2);
+        //updateScore();        
+        ball.update();
+
+
+        paddlePlayer1.update();
+        paddlePlayer2.update();
+    
+    } // end update
+    
+    </script>
+</head>
+<body onload = "init()">
+</body>
+</html>
