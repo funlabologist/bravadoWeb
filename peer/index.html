@@ -1,0 +1,193 @@
+<html><head></head><body>
+<h1>Two-Player Apple Collector RPG</h1>
+
+<canvas id="gameCanvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+<div id="scoreboard">
+    <p>Player 1 Score: <span id="player1Score">0</span></p>
+    <p>Player 2 Score: <span id="player2Score">0</span></p>
+</div>
+<div id="connectionInfo"></div>
+
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+<script>
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.players = [
+            { x: 100, y: 100, color: 'blue', score: 0, direction: 'down', frame: 0 },
+            { x: 700, y: 500, color: 'red', score: 0, direction: 'down', frame: 0 }
+        ];
+        this.apples = [];
+        this.backgroundImage = new Image();
+        this.backgroundImage.src = "rpg_background.png";
+        this.appleImage = new Image();
+        this.appleImage.src = "apple.png";
+        this.collectSound = new Audio("collect.mp3");
+
+        // Load player sprite sheets
+        this.playerSprites = [new Image(), new Image()];
+        this.playerSprites[0].src = "player1_sprite.png";
+        this.playerSprites[1].src = "player2_sprite.png";
+
+        this.generateApples();
+        this.setupKeyListeners();
+        this.lastUpdateTime = Date.now();
+    }
+
+    generateApples() {
+        for (let i = 0; i < 10; i++) {
+            this.apples.push({
+                x: Math.random() * (this.canvas.width - 20),
+                y: Math.random() * (this.canvas.height - 20)
+            });
+        }
+    }
+
+    setupKeyListeners() {
+        document.addEventListener('keydown', (e) => {
+            const player = e.key.includes('Arrow') ? this.players[0] : this.players[1];
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    player.x -= 5;
+                    player.direction = 'left';
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    player.x += 5;
+                    player.direction = 'right';
+                    break;
+                case 'ArrowUp':
+                case 'w':
+                    player.y -= 5;
+                    player.direction = 'up';
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    player.y += 5;
+                    player.direction = 'down';
+                    break;
+            }
+            this.checkCollisions(player);
+            this.draw();
+        });
+    }
+
+    checkCollisions(player) {
+        this.apples = this.apples.filter((apple, index) => {
+            if (Math.abs(player.x - apple.x) < 20 && Math.abs(player.y - apple.y) < 20) {
+                player.score++;
+                this.collectSound.play();
+                this.updateScoreboard();
+                return false;
+            }
+            return true;
+        });
+
+        if (this.apples.length === 0) {
+            this.generateApples();
+        }
+    }
+
+    updateScoreboard() {
+        document.getElementById('player1Score').textContent = this.players[0].score;
+        document.getElementById('player2Score').textContent = this.players[1].score;
+    }
+
+    draw() {
+        this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+
+        for (const apple of this.apples) {
+            this.ctx.drawImage(this.appleImage, apple.x, apple.y, 20, 20);
+        }
+
+        const now = Date.now();
+        const dt = now - this.lastUpdateTime;
+        this.lastUpdateTime = now;
+
+        for (let i = 0; i < this.players.length; i++) {
+            const player = this.players[i];
+            const spriteSheet = this.playerSprites[i];
+
+            // Update animation frame
+            player.frame = (player.frame + dt / 200) % 4;
+
+            // Draw player sprite
+            const directions = ['down', 'left', 'right', 'up'];
+            const directionIndex = directions.indexOf(player.direction);
+            this.ctx.drawImage(
+                spriteSheet,
+                Math.floor(player.frame) * 32, directionIndex * 32, 32, 32,
+                player.x - 16, player.y - 16, 32, 32
+            );
+        }
+    }
+}
+
+const game = new Game();
+
+// PeerJS setup
+let peer = new Peer();
+let conn;
+
+peer.on('open', (id) => {
+    document.getElementById('connectionInfo').innerHTML = `
+        <p>Your Peer ID: ${id}</p>
+        <button onclick="createRoom()">Create Room</button>
+        <button onclick="joinRoom()">Join Room</button>
+    `;
+});
+
+function createRoom() {
+    alert(`Share your Peer ID with the other player: ${peer.id}`);
+}
+
+function joinRoom() {
+    const hostId = prompt("Enter the host's Peer ID:");
+    conn = peer.connect(hostId);
+    conn.on('open', () => {
+        alert('Connected to host!');
+        setupDataHandling();
+    });
+}
+
+peer.on('connection', (connection) => {
+    conn = connection;
+    alert('Player 2 connected!');
+    setupDataHandling();
+});
+
+function setupDataHandling() {
+    conn.on('data', (data) => {
+        if (data.type === 'move') {
+            game.players[1].x = data.x;
+            game.players[1].y = data.y;
+            game.players[1].direction = data.direction;
+            game.draw();
+        } else if (data.type === 'collect') {
+            game.players[1].score = data.score;
+            game.updateScoreboard();
+        }
+    });
+}
+
+document.addEventListener('keydown', (e) => {
+    if (conn && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        conn.send({
+            type: 'move',
+            x: game.players[0].x,
+            y: game.players[0].y,
+            direction: game.players[0].direction
+        });
+    }
+});
+
+function gameLoop() {
+    game.draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body></html>
