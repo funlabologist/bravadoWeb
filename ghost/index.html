@@ -1,1 +1,341 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghost House</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+    #gameCanvas {
+        display: block;
+        margin: 0 auto;
+        background: #333;
+    }
+    #splashScreen, #gameOverScreen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-family: 'Arial', sans-serif;
+    }
+    #splashScreen h1, #gameOverScreen h1 {
+        font-size: 3em;
+        margin-bottom: 20px;
+    }
+    button {
+        font-size: 1.5em;
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+    #hud {
+        position: absolute;
+        top: 10px;
+        left: 250px;
+        color: white;
+        font-family: 'Arial', sans-serif;
+        font-size: 22px;
+    }
+	
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
 
+<div id="hud">
+    <div>Bonuses: <span id="bonusCount">0</span></div>
+    <div>Time: <span id="countdown">60</span></div>
+</div>
+<div id="splashScreen">
+ <img id="gameLogo" src="assets/gameLogo.png" alt="Game Logo" width="300" height="150">
+    <!--<h1>Ghost House</h1>-->
+    <button id="startButton">Start</button>
+</div>
+<div id="gameOverScreen" style="display: none;">
+ <img id="gameOverLogo" src="assets/gameOver.png" alt="Game Over Logo" width="300" height="150">
+    <!--<h1>Game Over</h1>-->
+    <p>Bonuses collected: <span id="finalScore"></span></p>
+    <button id="restartButton">Play Again</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const splashScreen = document.getElementById('splashScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const startButton = document.getElementById('startButton');
+const restartButton = document.getElementById('restartButton');
+const bonusCountDisplay = document.getElementById('bonusCount');
+const countdownDisplay = document.getElementById('countdown');
+const finalScoreDisplay = document.getElementById('finalScore');
+
+let gameLoop;
+let player, enemies, obstacles, bonuses, key;
+let bonusCount = 0;
+let timeRemaining = 60;
+
+const TILE_SIZE = 48;
+const PLAYER_SPEED = 3;
+const ENEMY_SPEED = .5;
+
+class Sprite {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.frameIndex = 0;
+        this.tickCount = 0;
+        this.ticksPerFrame = 20; //was 10 Animation FrameSpeed
+        this.numberOfFrames = 1; //was 3 Animation frames
+    }
+
+    update() {
+        this.tickCount++;
+        if (this.tickCount > this.ticksPerFrame) {
+            this.tickCount = 0;
+            this.frameIndex = (this.frameIndex + 1) % this.numberOfFrames;
+        }
+    }
+
+    draw() {
+        ctx.drawImage(
+            assets[this.type],
+            this.frameIndex * TILE_SIZE, 0,
+            TILE_SIZE, TILE_SIZE,
+            this.x, this.y,
+            TILE_SIZE, TILE_SIZE
+        );
+    }
+}
+
+class Player extends Sprite {
+    constructor(x, y) {
+        super(x, y, 'player');
+        this.direction = 'down';
+    }
+
+    move(dx, dy) {
+        const newX = this.x + dx * PLAYER_SPEED;
+        const newY = this.y + dy * PLAYER_SPEED;
+        
+        if (newX >= 0 && newX <= canvas.width - TILE_SIZE &&
+            newY >= 0 && newY <= canvas.height - TILE_SIZE &&
+            !checkCollision(newX, newY, obstacles)) {
+            this.x = newX;
+            this.y = newY;
+        }
+
+        if (dx < 0) this.direction = 'left';
+        else if (dx > 0) this.direction = 'right';
+        else if (dy < 0) this.direction = 'up';
+        else if (dy > 0) this.direction = 'down';
+    }
+
+    draw() {
+        const directionIndex = ['down', 'left', 'right', 'up'].indexOf(this.direction);
+        ctx.drawImage(
+            assets.player,
+            this.frameIndex * TILE_SIZE, directionIndex * TILE_SIZE,
+            TILE_SIZE, TILE_SIZE,
+            this.x, this.y,
+            TILE_SIZE, TILE_SIZE
+        );
+    }
+}
+
+class Enemy extends Sprite {
+    constructor(x, y) {
+        super(x, y, 'enemy');
+    }
+
+    update() {
+        super.update();
+        const dx = Math.sign(player.x - this.x);
+        const dy = Math.sign(player.y - this.y);
+        
+        if (!checkCollision(this.x + dx * ENEMY_SPEED, this.y + dy * ENEMY_SPEED, obstacles)) {
+            this.x += dx * ENEMY_SPEED;
+            this.y += dy * ENEMY_SPEED;
+        }
+    }
+}
+
+function checkCollision(x, y, objects) {
+    return objects.some(obj => 
+        x < obj.x + TILE_SIZE &&
+        x + TILE_SIZE > obj.x &&
+        y < obj.y + TILE_SIZE &&
+        y + TILE_SIZE > obj.y
+    );
+}
+
+function resizeCanvas() {
+    const scale = Math.min(
+        window.innerWidth / (15 * TILE_SIZE),
+        window.innerHeight / (10 * TILE_SIZE)
+    );
+    
+    canvas.width = Math.floor(15 * TILE_SIZE * scale);
+    canvas.height = Math.floor(10 * TILE_SIZE * scale);
+    ctx.scale(scale, scale);
+}
+
+const assets = {
+    player: new Image(),
+    enemy: new Image(),
+    obstacle: new Image(),
+    bonus: new Image(),
+};
+
+const audioAssets = {
+    background: new Audio('assets/bgmusic.mp3'),
+    collect: new Audio('assets/collect.mp3'),
+    gameOver: new Audio('assets/gameover.mp3'),
+};
+
+function loadAssets() {
+    return new Promise(resolve => {
+        let loadedCount = 0;
+        const totalAssets = Object.keys(assets).length;
+
+        for (let key in assets) {
+            assets[key].onload = () => {
+                loadedCount++;
+                if (loadedCount === totalAssets) resolve();
+            };
+            assets[key].src = `assets/${key}.png`;
+        }
+    });
+}
+
+function initGame() {
+    player = new Player(canvas.width / 2, canvas.height / 2);
+    
+    enemies = [
+        new Enemy(TILE_SIZE, TILE_SIZE),
+        new Enemy(canvas.width - 2 * TILE_SIZE, TILE_SIZE),
+        new Enemy(TILE_SIZE, canvas.height - 2 * TILE_SIZE),
+    ];
+    
+    obstacles = [
+        new Sprite(3 * TILE_SIZE, 3 * TILE_SIZE, 'obstacle'),
+        new Sprite(11 * TILE_SIZE, 3 * TILE_SIZE, 'obstacle'),
+        new Sprite(7 * TILE_SIZE, 6 * TILE_SIZE, 'obstacle'),
+    ];
+    
+    bonuses = [
+        new Sprite(5 * TILE_SIZE, 2 * TILE_SIZE, 'bonus'), 
+        new Sprite(9 * TILE_SIZE, 7 * TILE_SIZE, 'bonus'),
+        new Sprite(13 * TILE_SIZE, 5 * TILE_SIZE, 'bonus'),
+        new Sprite(14 * TILE_SIZE, 7 * TILE_SIZE, 'bonus'),  //extra one test
+    ];
+
+    bonusCount = 0;
+    timeRemaining = 60;
+}
+
+function startGame() {
+    splashScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    initGame();
+    audioAssets.background.play();
+    gameLoop = setInterval(update, 1000 / 60);
+    setInterval(() => {
+        timeRemaining--;
+        countdownDisplay.textContent = timeRemaining;
+        if (timeRemaining <= 0) endGame();
+    }, 1000);
+}
+
+function endGame() {
+    clearInterval(gameLoop);
+	timeRemaining=1;
+    audioAssets.background.pause();
+    audioAssets.background.currentTime = 0;
+    audioAssets.gameOver.play();
+	gameOverScreen.style.display = 'flex';
+    finalScoreDisplay.textContent = bonusCount;
+}
+
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    player.update();
+    player.draw();
+    
+    enemies.forEach(enemy => {
+        enemy.update();
+        enemy.draw();
+        if (checkCollision(player.x, player.y, [enemy])) endGame();
+    });
+    
+    obstacles.forEach(obstacle => obstacle.draw());
+    
+    bonuses = bonuses.filter(bonus => {
+        bonus.draw();
+        if (checkCollision(player.x, player.y, [bonus])) {
+            bonusCount++;
+			
+            bonusCountDisplay.textContent = bonusCount;
+            audioAssets.collect.play();
+            return false;
+        }
+        return true;
+    });
+    
+    if (bonuses.length === 0) endGame();
+}
+
+window.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'ArrowLeft': player.move(-3, 0); break;
+        case 'ArrowRight': player.move(3, 0); break;
+        case 'ArrowUp': player.move(0, -3); break;
+        case 'ArrowDown': player.move(0, 3); break;
+    }
+});
+
+window.addEventListener('touchstart', handleTouch);
+window.addEventListener('touchmove', handleTouch);
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    const dx = x - (player.x + TILE_SIZE / 2) * (rect.width / canvas.width);
+    const dy = y - (player.y + TILE_SIZE / 2) * (rect.height / canvas.height);
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+        player.move(Math.sign(dx), 0);
+    } else {
+        player.move(0, Math.sign(dy));
+    }
+}
+
+
+window.addEventListener('resize', resizeCanvas);
+startButton.addEventListener('click', startGame);
+restartButton.addEventListener('click', startGame);
+
+async function init() {
+    await loadAssets();
+    resizeCanvas();
+    splashScreen.style.display = 'flex';
+}
+
+init();
+</script>
+</body></html>
