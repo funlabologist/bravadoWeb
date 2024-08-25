@@ -1,29 +1,427 @@
-<!DOCTYPE HTML>
-<html lang=”en-US”>
-<head>
-<meta charset=”UTF-8”>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GameTemplate</title>
-<body style="background-color:#5A0FC8;">
+<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Side Scroller</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Press Start 2P', cursive;
+  }
+  #gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  #hud {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+	width: 100%;
+    color: white;
+    font-size: 22px;
+	line-height:30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+	
+	
+  }
+  #splashScreen, #gameOverScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0,0,0,0.7);
+    color: white;
+  }
+  #splashScreen h1, #gameOverScreen h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  #startButton, #restartButton {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    padding: 10px 20px;
+    background-color: #000000;
+    color: white;
+	border-radius: 18px;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  #splashLogo, #gameOverLogo {
+    width: 600px;
+    height: 240px;
+    margin-bottom: 20px;
+  }
+  .floater {
+    position: absolute;
+    color: #ffffff;
+    font-size: 44px;
+    
+    pointer-events: none;
+    opacity: 1;
+    transition: transform 1s ease-out, opacity 1s ease-out;
+  }
+     
+
+</style>
 </head>
 <body>
-<center>
-<p>
-<p>
-<img src = 'assets/gameLogo.png'
-alt = “Goo Goo makes a game!” /><br>
-<p>
-<button onclick="document.location='lilwitch3.html'">START GAME</button>
-&nbsp;&nbsp;&nbsp;
-<button onclick="document.location='how2play.html'">HOW2PLAY</button>
-</p>
-<p>
-<p>
-<br>
-<!--&copy;2024 BravadoArts.com-->
-</p>
-<p>
-<!--<a href = 'game.html'>Start Game</a>-->
-</p>
-</body>
-</html>
+
+<canvas id="gameCanvas"></canvas>
+<div id="hud">
+ <div>SCORE: <span id="score">0</span></div>
+ <div>BONUS: <span id="bonus">0</span></div>
+ <div>TIME: <span id="countdown">60</span></div> 
+ 
+</div>
+<div id="splashScreen">
+  <img id="splashLogo" src="assets/splash_logo.png" alt="Retro Side Scroller Logo" width="600" height="240">
+  <h1>RETRO SIDE SCROLLER</h1>
+  <button id="startButton">START GAME</button>
+</div>
+<div id="gameOverScreen" style="display:none;">
+  <img id="gameOverLogo" src="assets/game_over_logo.png" alt="Game Over Logo" width="600" height="240">
+  <!--<h1>GAME OVER</h1>-->
+  <p>YOUR SCORE: <span id="finalScore"></span></p>
+  <button id="restartButton">PLAY AGAIN</button>
+</div>
+
+<script>
+
+// Game variables
+let canvas, ctx, player, enemies = [], bonuses = [], clouds = [], bullets = [], ground;
+let score = 0, bonusCount = 0, timeLeft = 60;
+let isJumping = false, canJump = true;
+const GRAVITY = 0.5, JUMP_FORCE = -15;
+const GROUND_HEIGHT = 80, PLAYER_SPEED = 3; //was 5
+const GAME_WIDTH = 800, GAME_HEIGHT = 400;
+
+// Game objects
+class GameObject {
+  constructor(x, y, width, height, color) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.color = color;
+    this.vy = 0;
+    this.vx = 0;
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class AnimatedObject extends GameObject {
+  constructor(x, y, width, height, spriteSheet, frames) {
+    super(x, y, width, height);
+    this.spriteSheet = new Image();
+    this.spriteSheet.src = spriteSheet;
+    this.frames = frames;
+    this.currentFrame = 0;
+    this.animationSpeed = 0.15;
+    this.animationCounter = 0;
+  }
+
+  draw(ctx) {
+    this.animationCounter += this.animationSpeed;
+    if (this.animationCounter >= 1) {
+      this.currentFrame = (this.currentFrame + 1) % this.frames;
+      this.animationCounter = 0;
+    }
+    ctx.drawImage(
+      this.spriteSheet,
+      this.currentFrame * this.width, 0, this.width, this.height,
+      this.x, this.y, this.width, this.height
+    );
+  }
+}
+
+// Initialize game
+function initGame() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  canvas.width = GAME_WIDTH;
+  canvas.height = GAME_HEIGHT;
+
+  // Create player
+  player = new AnimatedObject(100, GAME_HEIGHT - GROUND_HEIGHT - 64, 64, 64, 'assets/player_sprite.png', 3);
+
+  // Create ground
+  ground = new GameObject(0, GAME_HEIGHT - GROUND_HEIGHT, GAME_WIDTH, GROUND_HEIGHT, '#3CB371');
+
+
+  // MiniCountdown 3..2..1..start
+  
+  // Start game loop
+  requestAnimationFrame(gameLoop);
+
+  // Event listeners
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  canvas.addEventListener('touchstart', onTouchStart);
+  canvas.addEventListener('touchend', onTouchEnd);
+
+  // Start spawning enemies and bonuses
+  setTimeout(spawnEnemy, Math.random() * 2000);
+ // setInterval(spawnEnemy, 2000); //was 2000
+  setInterval(spawnBonus, 3000); //was 3000
+  setInterval(spawnCloud, 4500);
+
+  // Start countdown
+  startCountdown();
+}
+
+// Game loop
+function gameLoop() {
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw background (sky)
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw ground
+  ground.draw(ctx);
+
+  // Move and draw player
+  player.vy += GRAVITY;
+  player.y += player.vy;
+  player.x += player.vx * PLAYER_SPEED;
+
+  // Keep player on screen
+  if (player.x < 0) player.x = 0;
+  if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+  if (player.y + player.height > GAME_HEIGHT - GROUND_HEIGHT) {
+    player.y = GAME_HEIGHT - GROUND_HEIGHT - player.height;
+    player.vy = 0;
+    isJumping = false;
+    canJump = true;
+	
+  }
+
+  player.draw(ctx);
+
+  // Move and draw enemies
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    let enemy = enemies[i];
+    enemy.x -= 3;
+    if (enemy.x + enemy.width < 0) {
+      enemies.splice(i, 1);
+    } else {
+      enemy.draw(ctx);
+      if (checkCollision(player, enemy)) {
+        gameOver();
+		scene.Stop();
+        return;
+      }
+    }
+  }
+
+  // Move and draw bonuses
+  for (let i = bonuses.length - 1; i >= 0; i--) {
+    let bonus = bonuses[i];
+    bonus.x -= 2;
+    if (bonus.x + bonus.width < 0) {
+      bonuses.splice(i, 1);
+    } else {
+      bonus.draw(ctx);
+      if (checkCollision(player, bonus)) {
+        bonuses.splice(i, 1);
+        collectBonus();
+		
+      }
+    }
+  }
+
+ // Move and draw clouds
+  for (let i = clouds.length - 1; i >= 0; i--) {
+    let cloud = clouds[i];
+    cloud.x -= 2;
+    if (cloud.x + cloud.width < 0) {
+      clouds.splice(i, 1);
+    } else {
+      cloud.draw(ctx);
+      
+    }
+  }
+
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Check collision between two objects
+function checkCollision(obj1, obj2) {
+  return obj1.x < obj2.x + obj2.width &&
+         obj1.x + obj1.width > obj2.x &&
+         obj1.y < obj2.y + obj2.height &&
+         obj1.y + obj1.height > obj2.y;
+		 
+}
+
+// Spawn enemy
+function spawnEnemy() {
+  let enemy = new AnimatedObject(canvas.width, GAME_HEIGHT - GROUND_HEIGHT - 64, 64, 64, 'assets/enemy_sprite.png', 3);
+  enemies.push(enemy);
+  
+   // Set the next interval
+    let randomInterval = Math.floor(Math.random() * (4000 - 500 + 1)) + 1000;
+    setTimeout(spawnEnemy, randomInterval);
+  
+}
+
+// Spawn bonus
+function spawnBonus() {
+  let bonus = new AnimatedObject(
+    canvas.width,
+    Math.random() * (GAME_HEIGHT -128 - GROUND_HEIGHT - 64), //was 64
+    64, 64,
+    'assets/bonus_sprite.png',
+    5
+  );
+  bonuses.push(bonus);
+}
+
+// Spawn clouds
+function spawnCloud() {
+  let cloud = new AnimatedObject(
+    canvas.width,
+    Math.random() * (GAME_HEIGHT - GROUND_HEIGHT - 84), 
+    119, 64,
+    'assets/cloud_sprite1.png',
+    1
+  );
+  clouds.push(cloud);
+}
+
+// Collect bonus
+function collectBonus() {
+  bonusCount++;
+  score += 10;
+  createFloater(player);
+  updateHUD();
+  playSound('bonus');
+}
+
+// Update HUD
+function updateHUD() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('bonus').textContent = bonusCount;
+  document.getElementById('countdown').textContent = timeLeft;
+}
+
+// Start countdown
+function startCountdown() {
+  let countdownInterval = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= 0) {
+      clearInterval(countdownInterval);
+      gameOver();
+	  scene.stop();
+    }
+  }, 1000);
+}
+
+
+function createFloater(player) {
+  const floater = document.createElement('div');
+  floater.className = 'floater';
+  floater.textContent = '+10';
+  floater.style.left = `${player.x+60}px`;
+  floater.style.top = `${player.y+100}px`;
+  
+  document.body.appendChild(floater); 
+  
+  // Trigger floater
+  setTimeout(() => {
+    floater.style.transform = 'translateY(-60px)';
+    floater.style.opacity = '0';
+  }, 50);
+  
+  // Remove the floater after animation
+  setTimeout(() => {
+    document.body.removeChild(floater);
+  }, 1050);
+}
+
+///
+
+// Game over
+function gameOver() {
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOverScreen').style.display = 'flex';
+  playSound('gameover');
+  //timeLeft=1;
+
+}
+
+// Key down event
+function onKeyDown(e) {
+  if (e.key === 'ArrowLeft') player.vx = -1;
+  if (e.key === 'ArrowRight') player.vx = 1;
+  if (e.key === 'ArrowUp' || e.key === ' ') jump();
+}
+
+// Key up event
+function onKeyUp(e) {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.vx = 0;
+}
+
+// Touch start event
+function onTouchStart(e) {
+  let touch = e.touches[0];
+  let rect = canvas.getBoundingClientRect();
+  let touchX = touch.clientX - rect.left;
+  if (touchX < canvas.width / 2) player.vx = -1;
+  else player.vx = 1;
+  jump();
+}
+
+// Touch end event
+function onTouchEnd() {
+  player.vx = 0;
+}
+
+// Jump function
+function jump() {
+  if (canJump && !isJumping) {
+    player.vy = JUMP_FORCE;
+    isJumping = true;
+    canJump = false;
+	//player.currentFrame=2;
+    playSound('jump');
+  }
+
+}
+
+// Play sound
+function playSound(name) {
+  let audio = new Audio(`assets/${name}.mp3`);
+  audio.play();
+}
+
+// Start game
+document.getElementById('startButton').addEventListener('click', () => {
+  document.getElementById('splashScreen').style.display = 'none';
+  initGame();
+});
+
+// Restart game
+document.getElementById('restartButton').addEventListener('click', () => {
+  location.reload();
+});
+</script>
+</body></html>
