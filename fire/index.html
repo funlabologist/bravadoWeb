@@ -329,8 +329,9 @@ function startCountdown() {
     updateHUD();
     if (timeLeft <= 0) {
       clearInterval(countdownInterval);
-      gameOver();
-	  scene.stop();
+      scene.stop();
+	  gameOver();
+	  
     }
   }, 1000);
 }
@@ -364,6 +365,7 @@ function gameOver() {
   document.getElementById('finalScore').textContent = score;
   document.getElementById('gameOverScreen').style.display = 'flex';
   playSound('gameover');
+  timeLeft=1;
   //timeLeft=1;
 
 }
