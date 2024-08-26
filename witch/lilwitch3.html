@@ -1,0 +1,247 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lilWitch3</title>
+	<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+	<body style="background-color:#5A0FC8;">
+
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Press Start 2P', cursive;
+  }
+ 
+  .floater {
+    position: absolute;
+    color: #ffffff;
+    font-size: 44px;
+    
+    pointer-events: none;
+    opacity: 1;
+    transition: transform 1s ease-out, opacity 1s ease-out;
+  }
+  #flex-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 700px;
+    margin: 0 auto;
+	padding: 0px;
+	z-index: 10;
+	position: absolute;
+  top: 40px;
+  left: 50px;
+}
+
+.flex-item {
+    width: 200px;
+    height: 25px;
+	text-align: center;
+	 color: white;
+	 text-shadow: 4px 4px 4px #000000;
+    
+}
+
+     
+
+</style>
+	
+	
+    <script type="text/javascript"
+            src = "assets/simpleGame.js"></script>
+    <script type="text/javascript">
+
+    //game vars
+    var scene;
+	var witch;
+	var candy;
+	var skull;
+	var scoreBoard;
+	var health = 100;
+    var hits = 0;
+	var bkg;
+	var healthScore;
+	var timer;
+	var time;
+	var MAXTIME = 30;
+
+	//var gameoverMP3;
+	
+	
+    
+    //constants
+    
+    function witch(){
+        twitch = new Sprite(scene, "assets/witch.png", 120, 125);
+        twitch.setSpeed(0);
+        twitch.setPosition()
+        
+		twitch.followMouse = function(){
+            this.setPosition(65, scene.getMouseY());
+        }
+        
+        return twitch;
+    } // end witch constructor
+    
+    ///////////////////////////
+	function candy(){
+        tcandy = new Sprite(scene, "assets/coin.png", 50, 51);
+        
+        tcandy.reset = function(){
+            this.setDY(0);
+            this.setDX(-7);
+			newY = Math.random() * scene.height-5;
+            this.setPosition(780, newY);
+			} // end reset
+        
+        tcandy.checkBounds = function(){
+            if (this.x < 0){
+                this.reset();
+            } // end if
+        } // end checkBounds
+        
+        tcandy.reset();
+       
+        return tcandy;
+    } // end candy
+	
+	////////////////////////////
+	function skull(){
+        tskull = new Sprite(scene, "assets/bomb.png", 130, 63);
+        
+        tskull.reset = function(){
+            this.setDY(0);
+            this.setDX(-11);
+            newY = Math.random() * scene.height-5;
+            this.setPosition(780, newY);
+        } // end reset
+        
+        tskull.checkBounds = function(){
+            if (this.x < 0){
+                this.reset();
+            } // end if
+        } // end checkBounds
+        
+        tskull.reset();
+        
+        return tskull;
+    } // end candy
+	
+	////////////////////////////
+    
+    
+    function init(){
+	    scoreBoard = document.getElementById("scoreBoard");
+		healthScore = document.getElementById("healthScore");
+		timeScore = document.getElementById("timeScore");
+		hits = 0;
+		health=100;
+		timer = new Timer();
+		//gameoverMP3 = new Sound("assets/gameover.mp3");
+        
+		scene = new Scene();
+		scene.setSize(800, 400);
+		
+		//scene.setBG("purple");
+        scene.hideCursor();
+        
+        bkg = new Sprite(scene, "assets/bkg.png", 800, 600);
+        bkg.setPosition(400, 300);
+        bkg.setSpeed(0);
+		
+        witch = new witch();
+		candy = new candy();
+        skull = new skull();
+		
+        scene.start();
+    }  // end init
+    
+    function update(){
+        
+        scene.clear();
+        checkTime();
+        witch.followMouse();
+		
+		bkg.update();
+        
+		checkCollisions();
+        witch.update();
+        candy.update();
+		skull.update();
+		
+    } // end update();
+    
+	
+	//////////////////////////////
+	function checkCollisions(){
+            if (witch.collidesWith(skull)){
+                updateHealth();
+				skull.reset();
+            } // end if
+			if (witch.collidesWith(candy)){
+			    updateScore();
+				candy.reset();
+				
+			} // end if
+        } // end checkCollisions
+	/////////////////////////////////
+	
+	function updateScore(){
+            //update the scoreboard
+            hits += 1;
+            scoreBoard.innerHTML = " " + hits
+	  		
+        } // end updateScore
+		
+	function updateHealth(){
+            //update health
+            health -=25;
+            healthScore.innerHTML = " " + health
+			if (health <= 1){
+			scene.stop();
+			window.location.href = "gameOver.html";
+			
+			}
+	  		
+        } // end health	
+	//////////////////////////////////	
+	
+	function updateTime(){
+            //update time
+            
+            timeScore.innerHTML = " " + time
+			
+	  		
+        }
+	function checkTime(){
+time = timer.getElapsedTime();
+if (time > MAXTIME){
+//gameoverMP3.play();
+
+scene.stop();
+window.location.href = "gameOver.html";
+} // end if
+updateTime();
+} // end checkTime
+
+
+	
+    </script>
+	
+</head>
+<body onload = "init()">
+
+<div id="flex-container">
+        <div class="flex-item" id = "scoreBoard">0</div>
+		<div class="flex-item" id = "healthScore">100</div>
+		<div class="flex-item" id = "timeScore">GO!</div>
+
+    </div>
+
+</body>
+</html>
