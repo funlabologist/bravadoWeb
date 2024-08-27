@@ -12,7 +12,7 @@
     margin: 0;
     padding: 0;
 	display: flex;
-    height: 100%;
+    height: 98%;
 	justify-content: center;
     overflow: hidden;
     font-family: 'Press Start 2P', cursive;
@@ -32,25 +32,22 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    width: 70%;
+    width: 80%;
     margin: 0 auto;
-	padding: 5%;
+	padding: 4.5%;
 	z-index: 10;
 	position: absolute;
-   left: 5%;
+    left: 5%;
 }
 
 .flex-item {
-    width: 25%;
-    height: 25%;
-	font-size: 150%;
+    width: 30%;
+    font-size: 150%;
 	text-align: center;
 	 color: white;
 	 text-shadow: 4px 4px 4px #000000;
     
 }
-
-     
 
 </style>
 	
@@ -72,12 +69,12 @@
 	var timer;
 	var time;
 	var MAXTIME = 30;
-
 	//var gameoverMP3;
 	
 	
     
     //constants
+	
     
     function witch(){
         twitch = new Sprite(scene, "assets/witch.png", 120, 125);
@@ -136,7 +133,7 @@
     } // end candy
 	
 	////////////////////////////
-    
+	
     
     function init(){
 	    scoreBoard = document.getElementById("scoreBoard");
@@ -148,19 +145,21 @@
 		//gameoverMP3 = new Sound("assets/gameover.mp3");
         
 		scene = new Scene();
-		scene.setSize(800, 400);
+		scene.setSize(800, 400); //was 800
 		
 		//scene.setBG("purple");
         scene.hideCursor();
         
-        bkg = new Sprite(scene, "assets/bkg.png", 800, 600);
+        bkg = new Sprite(scene, "assets/bkg-a.png", 800, 600);
         bkg.setPosition(400, 300);
         bkg.setSpeed(0);
 		
+		
+		
+      
         witch = new witch();
 		candy = new candy();
         skull = new skull();
-		
         scene.start();
     }  // end init
     
@@ -176,6 +175,7 @@
         witch.update();
         candy.update();
 		skull.update();
+
 		
     } // end update();
     
@@ -241,9 +241,9 @@ updateTime();
 
 <div id="flex-container">
 
-        <div class="flex-item" id = "scoreBoard">0</div>
+        <div class="flex-item" id = "scoreBoard" >0</div>
 		<div class="flex-item" id = "healthScore">100</div>
-		<div class="flex-item" id = "timeScore">GO!</div>
+		<div class="flex-item" id = "timeScore" >GO!</div>
 
     </div>
 
