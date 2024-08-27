@@ -1,0 +1,109 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>virtualKeys</title>
+    <script type="text/javascript"
+            src = "simpleGame.js"></script>
+    <script type="text/javascript">
+    var game;
+    var ball;
+	var background;
+	var apple;
+	var hits =0;
+	var powerUp;
+	
+	
+	
+    //activate virtual arrow keys when joystick is present
+    var virtKeys = true;
+    
+    function init(){
+        game = new Scene();
+		
+		background = new Sprite(game, "bkg.png", 800, 600);
+        background.setSpeed(0,0);
+        background.setPosition(400, 300);
+        
+		ball = new Sprite(game, "lilwitch.png", 60, 60);
+        ball.setSpeed(0);
+		
+//		powerUp = new Sound(“powerUp.mp3”);
+	powerUp=new Sound("powerUp.mp3");	
+        apple = new Sprite(game, "apple.png", 35, 35);
+        apple.reset = function(){
+    this.setSpeed(0);
+    this.setX(Math.random() * game.width);
+    this.setY(Math.random() * game.height);
+    }
+  apple.reset();
+
+  checkCollisions = function(){
+    if (ball.collidesWith(apple)){
+        updateScore();
+		apple.reset();
+		powerUp.play();
+    } // end if
+  } // end checkCollisions
+
+		
+        var joy = Joy();
+		    
+        game.start();
+    } // end init
+    
+	//////////////////////////////////
+	
+	
+	///////////////////////////////////
+    function update(){
+        game.clear();
+		checkCollisions();
+		checkKeys();
+    
+		background.update();
+		apple.update();
+        ball.update();
+    } // end update
+    
+    function checkKeys(){
+        ball.setDX(0);
+        ball.setDY(0);
+        
+        if (keysDown[K_UP]){
+            ball.setDY(-5);
+        }
+        if (keysDown[K_DOWN]){
+            ball.setDY(5);
+        }
+        if (keysDown[K_LEFT]){
+            ball.setDX(-5);
+        }
+        if (keysDown[K_RIGHT]){
+            ball.setDX(5);
+        }
+        
+        
+    }
+    //////////////////
+	/////////////////////////////////
+	
+	function updateScore(){
+            //update the scoreboard
+            hits += 1;
+            scoreBoard.innerHTML = "Apples: " + hits
+	  		
+        } // end updateScore
+		
+	//////////////////////////////////
+    
+    ///////////////////////////
+    </script>
+</head>
+<body onload = init()>
+   <div style="position: absolute; z-index: 1; left: 50px; top: 40px; color: yellow; text-shadow: 2px 2px 4px #000000; 
+font-family: Impact, fantasy; font-size: 30px;">
+        <div  id = "scoreBoard">Apples: 0</div>
+    </div>
+</body>
+</html>
