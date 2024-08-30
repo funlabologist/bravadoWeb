@@ -1,1 +1,149 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>platform.html</title>
+    <script type="text/javascript"
+            src = "../simpleGame.js"></script>
+    <script type="text/javascript">
+    //character graphics adapted from a character from Smack!
+    //by creek23.  original file released via creative commons
+    //and available at http://opengameart.org/users/creek23
+    
+    //blocks are draggable to try new configurations
+    
+    var scene;
+    var character;
+    var blocks;
+    
+    function Character(){
+        tCharacter = new Sprite(scene, "player.png", 64, 64);
+        tCharacter.setSpeed(0);
+        tCharacter.setPosition(100, 400);
+        tCharacter.falling = true;
+        
+        tCharacter.checkKeys = function(){
+            if (keysDown[K_LEFT]){
+			this.setImage("playerL.png");
+                this.changeXby(-5);
+            }
+            if (keysDown[K_RIGHT]){
+                this.changeXby(5);
+            }
+            if (keysDown[K_UP]){
+                
+                if (this.falling == false){
+                    this.setImage("playerJump.png");
+                    this.y -= 5;
+                    this.falling = true;
+                    this.addVector(0, 15);
+                } // end if
+            }else {
+                checkFalling();    
+            }// end if
+        } // end checkKeys
+        
+        tCharacter.checkGravity = function(){
+            if (this.falling){
+                this.addVector(180, 1);
 
+                //stop if on floor
+                if (this.y >= 550){
+                    this.setImage("player.png");
+                    this.falling = false;
+                    this.setSpeed(0);
+                    
+                } // end if   
+                
+            } // end if
+        } // end checkGravity
+        
+        return tCharacter;
+    } // end character def
+    
+    function Block(){
+        tBlock = new Sprite(scene, "block.png", 100, 50);
+        
+        tBlock.setSpeed(0);
+        tBlock.setPosition(200, 560);
+        
+        tBlock.checkLanding = function(){
+            //see if the character has landed
+            if (this.collidesWith(character)){
+                bTop = this.y - (this.height / 2);
+                cBottom = character.y + (character.height / 2);
+                if (cBottom > bTop){
+                    character.falling = false;
+                    character.setImage("player.png");
+                    character.setSpeed(0);
+                    //back up 
+                    this.setPosition((this.x -this.dx), (this.y -this.dy));
+                } // end if
+            } else {
+                //character.falling = true;   
+            }// end if
+        } // end checkLanding
+        
+        tBlock.checkDrag = function(){
+            //allow the block to be draggable
+            if (this.isClicked()){
+                this.setPosition(scene.getMouseX(), scene.getMouseY());
+            } // end if
+            
+        } // end checkDrag
+        
+        return tBlock;
+    } // end block def
+    
+    function makeBlocks(){
+        bWidth = 100;
+        bHeight = 50;
+        blocks = new Array(8)
+        for (i = 0; i < blocks.length; i++){
+            blocks[i] = new Block();
+            blocks[i].setPosition(bWidth * i, 550 - (bHeight * i));
+        } // end for loop
+    } // end makeBlocks
+    
+    function updateBlocks(){
+        for (i = 0; i < blocks.length; i++){
+            blocks[i].checkLanding();
+            blocks[i].checkDrag();
+            blocks[i].update();
+        } // end for
+    } // end checkLanding
+    
+    function checkFalling(){
+        //if not touching any of the blocks, set falling to true;
+        character.falling = true;
+        for (i = 0; i < blocks.length; i++){
+            if (character.collidesWith(blocks[i])){
+                character.falling = true;
+            } // end if
+        } // end for
+    } // end checkFalling
+    
+    function init(){
+        scene = new Scene();
+        character = new Character();
+        makeBlocks();        
+        scene.start();
+    } // end init
+    
+    function update(){
+        scene.clear();
+        
+        character.checkKeys();
+        character.checkGravity();
+        updateBlocks();;
+        
+        character.update();
+        
+    } // end update
+    
+    </script>
+</head>
+<body onload = "init()">
+    
+</body>
+</html>
