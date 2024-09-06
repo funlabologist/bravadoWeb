@@ -1,0 +1,249 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>Cheesin'</title>
+	<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+	display: flex;
+    height: 100%;
+	justify-content: center;
+    overflow: hidden;
+    font-family: 'Press Start 2P', cursive;
+  
+  }
+ 
+  .floater {
+    position: absolute;
+    color: #ffffff;
+    font-size: 44px;
+    
+    pointer-events: none;
+    opacity: 1;
+    transition: transform 1s ease-out, opacity 1s ease-out;
+  }
+  #flex-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 80%;
+    margin: 0 auto;
+	padding: 3%;
+	z-index: 10;
+	position: absolute;
+    
+}
+
+.flex-item {
+    width: 30%;
+	min-height: 40px;
+    font-size: 150%;
+	text-align: center;
+	 color: white;
+	 padding: 1.5%;
+	 text-shadow: 4px 4px 4px #000000;
+    
+}
+
+</style>
+	
+    <script type="text/javascript"
+            src = "../simpleGame.js"></script>
+    <script type="text/javascript">
+    
+    //game sprites
+    var scene;
+    var plane;
+    var island;
+    var clouds;
+    var ocean;
+	var hits=0;
+    
+    //sounds
+    var yayMp3;
+    var yayOgg;
+    var thunderMp3;
+    var thunderOgg;
+    var engineMp3;
+    var engineOgg;
+    
+    //constants
+    var OCEAN_SPEED = 5; //was 10
+    var NUM_CLOUDS = 3;
+    
+    function Plane(){
+        tPlane = new Sprite(scene, "assets/mouse.png", 75, 150); //was 50 x 27
+        tPlane.setSpeed(0);
+        tPlane.setPosition()
+        
+        tPlane.followMouse = function(){
+            this.setPosition(scene.getMouseX(), 500);
+        }
+        
+        return tPlane;
+    } // end plane constructor
+    
+    function Island(){
+        tIsland = new Sprite(scene, "assets/cheese.png", 75, 81);
+        
+        tIsland.reset = function(){
+            this.setDY(OCEAN_SPEED);
+            this.setDX(0);
+            newX = Math.random() * scene.width;
+            this.setPosition(newX, 0);
+        } // end reset
+        
+        tIsland.checkBounds = function(){
+            if (this.y > scene.height+80){
+                this.reset();
+            } // end if
+        } // end checkBounds
+        
+        tIsland.reset();
+        
+        return tIsland;
+    } // end island
+    
+    function Cloud(){
+        tCloud = new Sprite(scene, "assets/mousetrap.png", 75, 102);
+        
+        tCloud.reset = function(){
+            this.setDY((OCEAN_SPEED) );//+ 5);
+            this.setDX(0);//((Math.random() * 10) - 5);
+            newX = Math.random() * scene.width;
+            this.setPosition(newX, 0);
+        } // end reset
+        
+        tCloud.checkBounds = function(){
+            if (this.y > scene.height+80){
+                this.reset();
+            } // end if
+        } // end checkBounds
+        
+        tCloud.reset();
+        
+        return tCloud;
+    } // end cloud 
+    
+    function makeClouds(){
+        clouds = new Array(NUM_CLOUDS);
+        for (i = 0; i < NUM_CLOUDS; i++){
+            clouds[i] = new Cloud();
+        } // end for
+    } // end makeClouds
+    
+    function updateClouds(){
+        for (i = 0; i < NUM_CLOUDS; i++){
+            clouds[i].update();
+        } // end for
+    } // end updateClouds
+    
+    function Ocean(){
+        tOcean = new Sprite(scene, "assets/ocean.png", 800, 1440);
+        tOcean.setDX(0);
+        tOcean.setDY(OCEAN_SPEED);
+        tOcean.setPosition(400, 0);
+        
+        
+        tOcean.checkBounds = function(){
+            //seamless ocean gif repeats
+            if (this.y > 720){
+                this.setPosition(400,-120)
+            } // end if
+        } // end checkBounds
+        
+        
+        return tOcean;
+    } // end ocean
+    
+    buildSounds = function(){
+        yayMp3 = new Sound("yay.mp3");
+        yayOgg = new Sound("yay.ogg");
+        
+        thunderMp3 = new Sound("thunder.mp3");
+        thunderOgg = new Sound("thunder.ogg");
+        
+        engineMp3 = new Sound("engine.mp3");
+        engineOgg = new Sound("engine.ogg");
+        
+    } // end buildSounds
+    
+    function checkCollisions(){
+        //plane on island
+        if (plane.collidesWith(island)){
+            yayOgg.play(); //yummy
+            yayMp3.play();
+            island.reset();
+			updateScore();
+        } // end if
+        
+        //plane on cloud
+        for (i = 0; i < NUM_CLOUDS; i++){
+            if (plane.collidesWith(clouds[i])){
+                thunderOgg.play(); ////owww for mouse
+                thunderMp3.play();
+                clouds[i].reset();
+            } // end if
+        } // end for
+    } // end checkCollisions
+    
+    function init(){
+        scene = new Scene();
+		scene.setSize(1024,600);
+        scene.hideCursor();
+        
+        buildSounds();
+        
+        plane = new Plane();
+        island = new Island();
+        makeClouds();
+        ocean = new Ocean();
+        
+        scene.start();
+    }  // end init
+    
+    function update(){
+        engineOgg.play();
+        engineMp3.play(); //running grunt breaths OR pitterPatter
+        
+        scene.clear();
+        
+        plane.followMouse();
+        
+        checkCollisions();
+        
+        ocean.update();
+        island.update();
+        plane.update();
+        updateClouds();
+        
+    } // end update();
+	
+	/////////////////////////////////
+	
+	function updateScore(){
+            //update the scoreboard
+            hits += 1;
+            scoreBoard.innerHTML = hits
+	  		
+        } // end updateScore
+		
+	//////////////////////////////////
+    
+    </script>
+	
+</head>
+<body onload = "init()">
+
+    </div>
+	<div id="flex-container">
+
+        <div class="flex-item" id = "scoreBoard", style= "background: center top url(assets/scoreIcon.png); background-repeat: no-repeat;">0</div>
+		<div class="flex-item" id = "", style="background: center top url(assets/gameLogoIcon.png);background-repeat: no-repeat;"></div>
+		<div class="flex-item" id = "healthScore", style="background: center top url(assets/healthIcon.png);background-repeat: no-repeat;">100%</div>
+		
+    </div>
+</body>
+</html>
