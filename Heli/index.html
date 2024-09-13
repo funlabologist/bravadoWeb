@@ -1,0 +1,105 @@
+<html lang="en-US"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <title>lilHelicopter</title> 
+	
+	<script type = "text/javascript" 
+            src = "../simpleGame.js"> 
+    </script> 
+     <script type="text/javascript">  
+//global variables 
+var scene; 
+var car; 
+var coin;
+var plingMp3;
+var plingOgg;
+//var btnUp;
+var btnUp;
+function init(){ 
+scene = new Scene(); 
+scene.setSize(1024, 600)
+
+  plingMp3 = new Sound("http://aharrisbooks.net/h5g/pling.mp3");
+  plingOgg = new Sound("http://aharrisbooks.net/h5g/pling.ogg");
+  
+  cloudBkg=new Sprite(scene, "assets/cloudBkg.png", 1024, 600); 
+  cloudBkg.setSpeed(0);
+  cloudBkg.setPosition(512,300);
+
+  car= new Sprite(scene, "assets/heli.png", 100, 90); 
+  car.setSpeed(3); 
+
+btnUp= new Sprite(scene,"assets/btnUp.png", 120,120);
+btnUp.setSpeed(0);
+btnUp.setPosition(150,500);
+
+btnDown= new Sprite(scene,"assets/btnDown.png", 120,120);
+btnDown.setSpeed(0);
+btnDown.setPosition(850,500);
+
+   car.checkKeys = function(){ 
+    //this.setSpeed(0); 
+    if (keysDown[K_UP]){ 
+      this.setSpeed(10); 
+    } // end if 
+
+    if (keysDown[K_LEFT]){ 
+      this.changeAngleBy(-5); 
+    } // end if 
+
+    if (keysDown[K_RIGHT]){ 
+      this.changeAngleBy(5); 
+    } // end if 
+  } // end checkKeys 
+
+  coin = new Sprite(scene, "assets/star.png", 100, 50);
+  coin.reset = function(){
+    
+    this.setSpeed(0);
+	
+    this.setX(Math.random() * scene.width);
+    this.setY(Math.random() * scene.height);
+    
+  }
+  coin.reset();
+
+  checkCollisions = function(){
+    if (car.collidesWith(coin)){
+      plingMp3.play();
+      plingOgg.play();
+      coin.reset();
+    } // end if
+  } // end checkCollisions
+
+  scene.start();
+} // end init 
+
+function update(){ 
+scene.clear(); 
+cloudBkg.update();
+  car.checkKeys(); 
+
+  checkCollisions();
+  
+  btnUp.update();
+  btnDown.update();
+  
+  checkButtons();
+  function checkButtons(){
+if (btnUp.isClicked()){
+car.changeAngleBy(-5);
+}
+if (btnDown.isClicked()){
+car.changeAngleBy(5);
+}
+} // end checkButtons
+
+  coin.update();
+  car.update();
+} // end update 
+
+</script> 
+</head> 
+<body onload = "init()"> 
+</body> 
+</html> 
