@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>SoccerJack</title>
+    <script type="text/javascript"
+            src = "assets/simpleGame.js"></script>
+    <script type="text/javascript">
+    var scene;
+    var ball;
+    var paddlePlayer;
+	var paddle;
+	var ready;
+	var hits =0;
+    //const myTimeout = setTimeout(myGreeting, 2000);
+    var joy = new Joy();
+    
+    function Ball(){
+        //class definition for ball
+        tBall = new Sprite(scene, "assets/ball.png", 75, 75);
+        
+        tBall.checkBounce = function(paddle){
+            //responds to a collision with the given paddle
+            //Max and min dy 
+            MAX = 10
+            if (this.collidesWith(paddle)){
+                this.setDY(this.dy * -1);            
+			  updateScore(); //add to score here for every bounce off player
+			  
+                dx = this.x - paddle.x;
+                dx = ((dx / paddle.width) * 2);
+                //console.log("dx: " + dx);
+                dx *= MAX;
+                this.setDX(dx);
+            } // end if
+        } // end checkBounce
+
+        tBall.checkBounds = function(){
+            //overwrite checkbounds function to give
+            //custom behavior
+            
+            //bounce off top and wrap at bottom
+            if (this.y < 0){
+                this.setDY(this.dy * -1);			
+            }
+			
+            if (this.y > scene.height){
+                
+				//popup blinking READY sprite for 2 seconds
+				ready.show(); 
+				//play sound buzzer
+				setTimeout(resetBall, 2000);
+				//this.setPosition(scene.width/2, 0); //wrap ball from bottom to top
+				//ready.hide();
+				//setInterval pause here - say "READY" then spawn a new Ball	
+            }
+            ////////////////////////////
+			//bounce off of sides
+			if (this.x < 0){
+                this.setDX(this.dx * -1);
+            }
+            if (this.x > scene.width){
+                this.setDX(this.dx * -1);
+            }
+			///////////////////////////
+			
+			
+        } // end checkBounds
+        
+        return tBall;
+    } // end Ball def
+    
+///////////
+function resetBall() {
+    // code to run after the timeout
+	//play sound whistleStart
+	ball.setPosition(scene.width/2, 0); //wrap ball from bottom to top
+    ready.hide();
+}
+////
+
+	
+    function Paddle(){
+        //class definition for paddle
+       // V_SPEED = 1;
+        //BRAINS = .2 //percentage likelihood paddle will move each turn
+        tPaddle = new Sprite(scene, "assets/player.png", 100, 150);
+        
+        tPaddle.followMouse = function(){
+            //follows mouse for player control
+            //this.setImgAngle(90);
+            this.x = scene.getMouseX();
+			
+        } // end followMouse method
+        
+        return tPaddle;
+    }
+
+	 
+    
+    function init(){
+        scene = new Scene();
+        scene.setBG("#79CDF1");//scene.setBG("black");
+        scene.hideCursor();
+        ball = new Ball();
+		ball.setAngle(180);
+   
+	///
+	ready=new Sprite(scene, "assets/ready.png", 200,36);
+	ready.setPosition(scene.width/2,250);
+	ready.setSpeed(0);
+	ready.hide();
+	
+	lives=new Sprite(scene,"assets/lives.png", 200,50); 
+	lives.setPosition(scene.width/2,60);
+	lives.setSpeed(0);
+	///
+        paddlePlayer = new Paddle();
+        paddlePlayer.setPosition(scene.width/2, 500);
+    
+        scene.start();
+    } // end init
+    
+    function update(){
+        scene.clear();
+        //ball.checkScore();
+
+        paddlePlayer.followMouse();
+        //paddleComp.autoMove();
+
+        ball.checkBounce(paddlePlayer);
+        //ball.checkBounce(paddleComp);
+        //updateScore();        
+        ball.update();
+ready.update();
+lives.update();
+// checkCollisions();
+        paddlePlayer.update();
+        //paddleComp.update();
+    
+    } // end update
+    
+	/////////////////////////////////
+	
+	function updateScore(){
+            //update the scoreboard
+            hits += 1;
+            scoreBoard.innerHTML =  hits
+	  		
+        } // end updateScore
+		
+	//////////////////////////////////
+    </script>
+</head>
+<body onload = "init()">
+<div style="position: absolute; z-index: 1; left: 50px; top: 40px; color: yellow; text-shadow: 2px 2px 4px #000000; 
+font-family: Impact, fantasy; font-size: 70px;">
+        <div  id = "scoreBoard">0</div>
+    </div>
+</body>
+</html>
