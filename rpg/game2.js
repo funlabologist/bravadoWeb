@@ -3,13 +3,14 @@ const ctx = canvas.getContext('2d');
 
 const tileSize = 32;
 const mapWidth = 32;
-const mapHeight = 19;
+const mapHeight = 18;
 const moveSpeed = 4; // player speed 
 
 const tiles = [
     'grass.png',
     'dirt.png',
-    'bush.png'
+    'bush.png', //collidable
+	'path.png'
 ];
 
 const map = [
@@ -30,7 +31,6 @@ const map = [
 	[2, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2],
 	[2, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2],
 	[2, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 2],
-	[2, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 1, 1, 1, 2, 0, 0, 0, 2],
 	[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
     
 ];
@@ -50,6 +50,7 @@ const coins = [
 	{ x: 3, y: 14, sprite: 'coin.png' },
 	{ x: 23, y: 12, sprite: 'coin.png' },
 	{ x: 29, y: 16, sprite: 'heart.png' },
+	{ x: 25, y: 4, sprite: 'skull.png' },
 	
     
 ];
@@ -81,14 +82,14 @@ function loadImages(sources, callback) {
 }
 
 function update() {
-    if (keys['ArrowUp']) player.y -= tileSize; //was tileSize-too fast
-    if (keys['ArrowDown']) player.y += tileSize;
+    if (keys['ArrowUp']) player.y -= tileSize/4; //was tileSize-too fast
+    if (keys['ArrowDown']) player.y += tileSize/4;
     if (keys['ArrowLeft']) {
-        player.x -= tileSize;
+        player.x -= tileSize/4;
         player.sprite = 'playerL.png';
     }
     if (keys['ArrowRight']) {
-        player.x += tileSize;
+        player.x += tileSize/4;
         player.sprite = 'playerR.png';
     }
 
@@ -134,6 +135,6 @@ function gameLoop(images) {
     requestAnimationFrame(() => gameLoop(images));
 }
 
-loadImages([...tiles, 'playerL.png', 'playerR.png', 'coin.png', 'heart.png'], (images) => {
+loadImages([...tiles, 'playerL.png', 'playerR.png', 'coin.png', 'heart.png', 'skull.png'], (images) => {
     gameLoop(images);
 });
