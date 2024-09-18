@@ -81,14 +81,14 @@ function loadImages(sources, callback) {
 }
 
 function update() {
-    if (keys['ArrowUp']) player.y -= moveSpeed; //was tileSize-too fast
-    if (keys['ArrowDown']) player.y += moveSpeed;
+    if (keys['ArrowUp']) player.y -= tileSize; //was tileSize-too fast
+    if (keys['ArrowDown']) player.y += tileSize;
     if (keys['ArrowLeft']) {
-        player.x -= moveSpeed;
+        player.x -= tileSize;
         player.sprite = 'playerL.png';
     }
     if (keys['ArrowRight']) {
-        player.x += moveSpeed;
+        player.x += tileSize;
         player.sprite = 'playerR.png';
     }
 
